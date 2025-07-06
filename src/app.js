@@ -19,12 +19,17 @@ const allowedOrigins = ["https://drstone.id.vn", "http://localhost:5173"];
 app.use(
   cors({
     origin: function (origin, callback) {
-      // ✅ Cho phép nếu không có origin (curl, Postman, server-to-server)
-      if (!origin) return callback(null, true);
+      // ✅ Cho phép gọi từ Postman, curl, server-to-server (no Origin)
+      if (!origin || origin === "null") {
+        console.log("✅ CORS allowed: no origin or 'null' (curl, Postman)");
+        return callback(null, true);
+      }
 
       if (allowedOrigins.includes(origin)) {
+        console.log("✅ CORS allowed:", origin);
         return callback(null, true);
       } else {
+        console.warn("❌ CORS blocked:", origin);
         return callback(new Error("Not allowed by CORS"));
       }
     },
