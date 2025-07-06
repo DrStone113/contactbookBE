@@ -9,12 +9,33 @@ const {
   resourceNotFound,
   handleError,
 } = require("./controllers/errors.controller");
+
 const app = express();
 const swaggerDocument = require("../docs/openapiSpec.json");
 
-// Rate limiting middleware: max 20 requests per minute
+// ✅ Cấu hình CORS chỉ cho phép domain cụ thể
+const allowedOrigins = [
+  "https://drstone.id.vn",
+  "http://localhost:5173", // cho phép test local
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Cho phép gọi không có origin (ví dụ từ curl, Postman)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    optionsSuccessStatus: 200,
+  })
+);
+
+// ✅ Giới hạn số lần gọi API (Rate limiting)
 const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: 60 * 1000, // 1 phút
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
@@ -23,29 +44,30 @@ const limiter = rateLimit({
     message: "Too many requests, please try again later.",
   },
 });
+app.use(limiter);
 
-app.use(cors());
-// Update upload file size limit to 10MB.
+// ✅ Cấu hình giới hạn size upload
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Apply rate limiting middleware globally
-app.use(limiter);
-
+// ✅ Route chính
 app.get("/", (req, res) => {
   return res.json(JSend.success());
 });
 
+// ✅ Swagger docs
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// ✅ Tĩnh
 app.use("/public", express.static("public"));
 
+// ✅ Các routes chính
 contactsRouter.setup(app);
 
-// Handle 404 error for unknown URL paths
+// ✅ Xử lý 404
 app.use(resourceNotFound);
 
-// Define the centralized error handling middleware, after all routes
-// and middleware have been defined
+// ✅ Middleware xử lý lỗi tổng quát
 app.use(handleError);
 
 module.exports = app;
