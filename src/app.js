@@ -14,19 +14,18 @@ const app = express();
 const swaggerDocument = require("../docs/openapiSpec.json");
 
 // ✅ Cấu hình CORS chỉ cho phép domain cụ thể
-const allowedOrigins = [
-  "https://drstone.id.vn",
-  "http://localhost:5173", // cho phép test local
-];
+const allowedOrigins = ["https://drstone.id.vn", "http://localhost:5173"];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Cho phép gọi không có origin (ví dụ từ curl, Postman)
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
+      // ✅ Cho phép nếu không có origin (curl, Postman, server-to-server)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       } else {
-        callback(new Error("Not allowed by CORS"));
+        return callback(new Error("Not allowed by CORS"));
       }
     },
     optionsSuccessStatus: 200,
